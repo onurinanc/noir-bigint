@@ -1,7 +1,7 @@
 use dep::std::println;
 
-use crate::ecdsa_secp256k1::fp::PrimeField as Fp;
-use crate::ecdsa_secp256k1::fq::PrimeField as Fq;
+use crate::examples::ecdsa_secp256k1::fp::PrimeField as Fp;
+use crate::examples::ecdsa_secp256k1::fq::PrimeField as Fq;
 
 // Point in three-dimensional Jacobian coordinates
 struct Point {
@@ -226,7 +226,7 @@ impl Curve {
     }
     
     // Scalar multiplication (p + ... + p n times)
-    fn mul(self, n: Fq, p: Point) -> Point {
+    fn mul(self, n: Fq, p: Point) -> Point { // n = order
         let n_as_bits = n.to_bits();
         self.bit_mul(n_as_bits, p)
     }

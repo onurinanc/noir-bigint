@@ -1,7 +1,5 @@
 use dep::std::println;
-
-use dep::biguint::{BigUint56, utils};
-use dep::biguint::{NUM_LIMBS, BITS_PER_LIMB, MAX_BITS, MAX_BYTES};
+use crate::{BigUint56, NUM_LIMBS, BITS_PER_LIMB, MAX_BITS, MAX_BYTES, utils};
 
 // Field element
 struct PrimeField {
@@ -10,32 +8,32 @@ struct PrimeField {
 
 impl PrimeField {
     ///////////////////////////////////////////////////////////////////////////
-    // FIELD SPECIFIC CONSTANTS: Secp256k1 Fp
+    // FIELD SPECIFIC CONSTANTS: Ed25519 Fp
     ///////////////////////////////////////////////////////////////////////////
 
     // Prime field modulus
     fn modulus() -> Self {
-        let val = BigUint56 { limbs: [0xfffffefffffc2f, 0xffffffffffffff, 0xffffffffffffff, 0xffffffffffffff, 0xffffffff] };
+        let val = BigUint56 { limbs: [0xffffffffffffed, 0xffffffffffffff, 0xffffffffffffff, 0xffffffffffffff, 0x7fffffff] };
         Self { val }
     }
 
     // R = 2^{BITS_PER_LIMB*NUM_LIMBS} mod p
     //   = 2^280 mod p
     fn R() -> Self {
-        let val = BigUint56 { limbs: [0x03d1000000, 0x01, 0, 0, 0] };
+        let val = BigUint56 { limbs: [0x26000000, 0x, 0x, 0x, 0x] };
         Self { val }
     }
 
     // R^2 mod p
     fn R2() -> Self {
-        let val = BigUint56 { limbs: [0xa1000000000000, 0x07a2000e90, 0x01, 0, 0] };
+        let val = BigUint56 { limbs: [0xa4000000000000, 0x05, 0x, 0x, 0x] };
         Self { val }
     }
 
     // INV = -p^{-1} mod 2^{BITS_PER_LIMB}
     //     = -p^{-1} mod 2^56
     fn P_INV() -> u56 {
-        0x38091dd2253531
+        0xbca1af286bca1b
     }
 
     ///////////////////////////////////////////////////////////////////////////

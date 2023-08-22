@@ -1,69 +1,58 @@
 use dep::std::println;
+use crate::{BigUint56, NUM_LIMBS, BITS_PER_LIMB, MAX_BITS, MAX_BYTES, utils};
 
-use dep::biguint::{BigUint56, utils};
-use dep::biguint::{NUM_LIMBS, BITS_PER_LIMB, MAX_BITS, MAX_BYTES};
-
-/// A structure representing a prime field element.
-///
-/// The `PrimeField` structure encapsulates operations in a prime field
-/// using the Montgomery form, which is a representation of a field element `a` as
-/// `a.R mod p`, where `R = 2^{MAX_BITS}`.
-///
-/// This structure provides efficient arithmetic operations in the prime field,
-/// utilizing the properties of the Montgomery form.
+// Prime field element
 struct PrimeField {
     val: BigUint56
 }
 
-/// Implementation of arithmetic operations for the `PrimeField` structure.
-///
-/// This implementation block provides methods for basic arithmetic operations,
-/// conversions, and utilities for elements in the prime field. The methods in this
-/// block ensure efficient computations by leveraging Montgomery multiplication and reduction.
+// Represents a prime field element in Montgomery form
+// Montgomery form is a representation of a field element `a` as
+// `a.R mod p`, where `R = 2^{MAX_BITS}`.
 impl PrimeField {
     ///////////////////////////////////////////////////////////////////////////
     // FIELD SPECIFIC CONSTANTS: BN254
     ///////////////////////////////////////////////////////////////////////////
 
-    /// Returns the prime field modulus.
+    // Prime field modulus
     fn modulus() -> Self {
-        let val = BigUint56 { limbs: [0x208c16d87cfd47, 0x6a916871ca8d3c, 0xb68181585d9781, 0xe131a029b85045, 0x30644e72] };
+        let val = BigUint56 { limbs: [0xe1f593f0000001, 0xe84879b9709143, 0xb68181585d2833, 0xe131a029b85045, 0x30644e72] };
         Self { val }
     }
 
-    /// Returns R which represents `2^{BITS_PER_LIMB*NUM_LIMBS} mod p` or `2^280 mod p`.
+    // R = 2^{BITS_PER_LIMB*NUM_LIMBS} mod p
+    //   = 2^280 mod p
     fn R() -> Self {
-        let val = BigUint56 { limbs: [0x6a56a28a0e0d96, 0x1e6c92b56d8f97, 0x10581c8ee608fc, 0x8c59c9e89f6e5c, 0x07359fa8] };
+        let val = BigUint56 { limbs: [0x4a771fc5ab5b8b, 0xe939ee8c1e556e, 0xc105a695dd60d0, 0x88c59c9e89f6e5, 0x7359fa] };
         Self { val }
     }
 
-    /// Returns R^2 mod p.
+    // R^2 mod p
     fn R2() -> Self {
-        let val = BigUint56 { limbs: [0xbb888f34693c46, 0x1c4bb9be2ac0dd, 0xc1a7aec3d9e1b9, 0x3cb4fa22c83580, 0x095e2ea9] };
+        let val = BigUint56 { limbs: [0xf9b2c977f4ec6b, 0x688742bb8aa70f, 0x0ff538b3ae1fcf, 0x6a1d99a8bf33da, 0xa45a5a] };
         Self { val }
     }
 
-    /// Returns INV which represents `-p^{-1} mod 2^{BITS_PER_LIMB}` or `-p^{-1} mod 2^56`.
+    // INV = -p^{-1} mod 2^{BITS_PER_LIMB}
+    //     = -p^{-1} mod 2^56
     fn P_INV() -> u56 {
-        0xd20782e4866389
+        0xe1f593efffffff
     }
 
     ///////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////
 
-    /// Constructs a prime field element from raw limbs without converting to Montgomery form.
+    // No montgomery mul here.
     fn from_raw_limbs(limbs: [u56; NUM_LIMBS]) -> Self {
         Self { val: BigUint56{ limbs } }
     }
 
-    /// Constructs a prime field element from limbs, then converts it to Montgomery form.
     fn from_limbs(limbs: [u56; NUM_LIMBS]) -> Self {
         let tmp = Self { val: BigUint56{ limbs } };
 
         tmp.mul(PrimeField::R2())
     }
 
-    /// Constructs a prime field element from a u56 value, then converts it to Montgomery form.
     fn from_u56(val: u56) -> Self {
         let tmp = Self { val: BigUint56::from_u56(val) };
 
@@ -72,7 +61,6 @@ impl PrimeField {
         tmp.mul(PrimeField::R2())
     }
 
-    /// Constructs a prime field element from a BigUint56 value, then converts it to Montgomery form.
     fn from_biguint56(val: BigUint56) -> Self {
         let tmp = Self { val };
 
@@ -81,7 +69,6 @@ impl PrimeField {
         tmp.mul(PrimeField::R2())
     }
 
-    /// Constructs a prime field element from a byte array, then converts it to Montgomery form.
     fn from_bytes(bytes: [u8]) -> Self {
         let tmp = Self { val: BigUint56::from_bytes(bytes) };
 
@@ -95,7 +82,6 @@ impl PrimeField {
         tmp.mul(PrimeField::R2())
     }
 
-    /// Converts the prime field element to a BigUint56 value.
     fn to_biguint56(self: Self) -> BigUint56 {
         // Turn into canonical form by computing
         // (a.R) / R = a
@@ -103,7 +89,8 @@ impl PrimeField {
         tmp.val
     }
 
-    /// Converts the prime field element to byte array in little-endian byte order.
+    // Converts a field element into a byte representation in
+    // little-endian byte order.
     fn to_bytes(self: Self) -> [u8; MAX_BYTES] {
         // Turn into canonical form by computing
         // (a.R) / R = a
@@ -111,7 +98,7 @@ impl PrimeField {
         tmp.val.to_bytes()
     }
 
-    /// Converts the prime field element to bit array, with LSB at index 0.
+    // Converts a field element into a bit representation
     fn to_bits(self: Self) -> [u1; MAX_BITS] {
         // Turn into canonical form by computing
         // (a.R) / R = a
@@ -119,18 +106,18 @@ impl PrimeField {
         tmp.val.to_bits()
     }
 
-    /// Returns zero, the additive identity for the prime field.
+    // Returns zero, the additive identity.
     fn zero() -> Self {
         let val: BigUint56 = BigUint56::zero();
         Self { val }
     }
 
-    /// Returns one, the multiplicative identity for the prime field.
+    // Returns one, the multiplicative identity.
     fn one() -> Self {
         PrimeField::R()
     }
 
-    /// Negates the prime field element.
+    // Negates `self`.
     fn neg(self: Self) -> Self {
         if self.is_zero() {
             self
@@ -141,7 +128,7 @@ impl PrimeField {
         }
     }
 
-    /// Adds another prime field element to this one.
+    // Adds `rhs` to `self`, returning the result.
     fn add(self: Self, rhs: Self) -> Self {
         let (sum, carry) = self.val.adc(rhs.val);
 
@@ -153,7 +140,7 @@ impl PrimeField {
         }
     }
 
-    /// Subtracts another prime field element from this one.
+    // Subtracts `rhs` from `self`, returning the result.
     fn sub(self: Self, rhs: Self) -> Self {
         let (diff, borrow) = self.val.sbb(rhs.val);
         // If underflow occurred on the final limb, borrow = 0xfff...fff, otherwise
@@ -166,25 +153,24 @@ impl PrimeField {
         }
     }
 
-    /// Doubles the value of the prime field element.
+    // Doubles this field element.
     fn double(self: Self) -> Self {
         self.add(self)
     }
 
-    /// Multiplies another prime field element with this one.
+    // Multiplies `rhs` by `self`, returning the result.
     fn mul(self: Self, other: Self) -> Self {
         let (lo, hi) = self.val.mul(other.val);
 
         PrimeField::montgomery_reduce(lo, hi)
     }
 
-    /// Squares the value of the prime field element.
+    // Squares this element.
     // TODO: See if more efficient squaring is possible.
     fn square(self: Self) -> Self {
         self.mul(self)
     }
 
-    /// Reduces the value of the prime field element using the Montgomery reduction method.
     fn montgomery_reduce(lo: BigUint56, hi: BigUint56) -> Self {
         let mut tmp = [0 as u56; 2*NUM_LIMBS];
         for i in 0..NUM_LIMBS {
@@ -222,7 +208,8 @@ impl PrimeField {
         }
     }
 
-    /// Exponentiates the prime field element to a given BigUint56 value using the double-and-add algorithm.
+    // Exponentiates `self` by `by`.
+    // Double-and-add algorithm
     fn pow(self: Self, by: BigUint56) -> Self {
         let mut res = PrimeField::one();
         for i in 0..NUM_LIMBS {
@@ -237,13 +224,12 @@ impl PrimeField {
         res
     }
 
-    /// Exponentiates the prime field element without constraints.
     unconstrained fn pow_unc(self: Self, by: BigUint56) -> Self {
         self.pow(by)
     }
 
-    /// Computes the multiplicative inverse of this element. 
-    /// Returns an error if the element is zero.
+    // Computes the multiplicative inverse of this element,
+    // failing if the element is zero.
     fn invert(self: Self) -> Self {
         assert(!self.is_zero());
 
@@ -253,22 +239,22 @@ impl PrimeField {
         inv
     }
 
-    /// Checks if the prime field element is zero.
+    // Checks if the field element is zero.
     fn is_zero(self: Self) -> bool {
         self.val.is_zero()
     }
 
-    /// Checks if the prime field element is one.
+    // Checks if the field element is one.
     fn is_one(self: Self) -> bool {
         self.eq(PrimeField::one())
     }
 
-    /// Checks if this prime field element is equal to another.
+    // Checks if self == other.
     fn eq(self: Self, other: Self) -> bool {
         self.val.eq(other.val)
     }
 
-    /// Prints the prime field element as byte array.
+    // Print as bytes
     fn println(self: Self) {
         let bytes = self.to_bytes();
         println(bytes);
